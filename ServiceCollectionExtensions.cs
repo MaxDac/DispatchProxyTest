@@ -6,18 +6,20 @@ namespace ConsoleApp6
 {
     public static class ServiceCollectionExtensions
 	{
-		public static IServiceCollection AddDependency(this IServiceCollection services)
+		public static IServiceCollection AddDependency<IInterface, IInstance>(this IServiceCollection services)
+			where IInterface : class
+			where IInstance : class, IInterface
 		{
-			services.AddTransient<Dependency>();
+			services.AddTransient<IInstance>();
 			services.AddTransient(s =>
 			{
 				// This way, it will leverage the dependency resolution for the internal instance,
 				// instead of creating it manually
-				IDependency instance = s.GetRequiredService<Dependency>();
+				IInterface instance = s.GetRequiredService<IInstance>();
 
 				// Creating the instance, composing it with two decorators
-				IDependency first = LoggerDecorator<IDependency>.Create(instance);
-				IDependency second = TryCatchDecorator<IDependency>.Create(first);
+				IInterface first = LoggerDecorator<IInterface>.Create(instance);
+				IInterface second = TryCatchDecorator<IInterface>.Create(first);
 				return second;
 			});
 
