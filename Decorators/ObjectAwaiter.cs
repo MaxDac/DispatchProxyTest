@@ -1,22 +1,34 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace ConsoleApp6.Decorators
 {
-	internal class ObjectAwaiter
+	internal class ObjectAwaiter<TDecorated>
+		where TDecorated : class
 	{
-		private readonly object? thisIsATaskISwear;
-		private readonly Type genericTaskType;
+		private readonly TDecorated? decorated;
+		private readonly MethodInfo? targetMethod;
+		private readonly object?[]? args;
 
-		public ObjectAwaiter(object? thisIsATaskISwear, Type genericTaskType)
+		public ObjectAwaiter(TDecorated? decorated, MethodInfo? targetMethod, object?[]? args)
 		{
-			this.thisIsATaskISwear = thisIsATaskISwear;
-			this.genericTaskType = genericTaskType;
+			this.decorated = decorated;
+			this.targetMethod = targetMethod;
+			this.args = args;
 		}
 
 		public TaskAwaiter GetAwaiter()
 		{
-			var getAwaiterMethod = this.genericTaskType.GetMethod(nameof(GetAwaiter));
-			var uncastedResult = getAwaiterMethod?.Invoke(this.thisIsATaskISwear, null);
+			var genericTaskType = targetMethod?.ReturnType?.GetGenericArguments()[0];
+
+			if (genericTaskType == null)
+			{
+				throw new InvalidOperationException("The task is not generic");
+			}
+
+			var result = targetMethod?.Invoke(decorated, args);
+			var getAwaiterMethod = genericTaskType.GetMethod(nameof(GetAwaiter));
+			var uncastedResult = getAwaiterMethod?.Invoke(result, null);
 
 			if (uncastedResult == null)
 			{
