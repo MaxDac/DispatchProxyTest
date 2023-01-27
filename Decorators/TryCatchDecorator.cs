@@ -17,8 +17,19 @@ namespace ConsoleApp6.Decorators
 
 		private Expression<Func<object?>> CreateExpressionLambda(ObjectAwaiter<TDecorated> awaitable)
 		{
-			// Implement the expression ere
-			throw new NotImplementedException();
+			// Create parameter that will be passed to catch block
+			var excepParam = Expression.Parameter(typeof(InvalidCastException));
+
+			MethodInfo? handleExceptionMethodInfo = GetType().GetMethod(nameof(HandleException));
+			MethodCallExpression returnMethodWithParameters2 = Expression.Call(Expression.Constant(), handleExceptionMethodInfo, excepParam);
+			UnaryExpression returnMethodWithParametersAsObject2 = Expression.Convert(returnMethodWithParameters2, typeof(object));
+
+			// Put created parameter before to CatchBlock.Variable using Expression.Catch
+			// that takes the first argument as ParameterExpression
+			TryExpression tryCatchMethod2 = TryExpression.TryCatch(returnMethodWithParametersAsObject, Expression.Catch(excepParam, returnMethodWithParametersAsObject2));
+			var exppp = Expression.Lambda<Func<object, object, object>>(tryCatchMethod2, parameters);
+			Func<object, object, object> func2 = Expression.Lambda<Func<object, object, object>>(tryCatchMethod2, parameters).Compile();
+			object result2 = func2(20, "f"); // result = 100
 		}
 
 		protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
